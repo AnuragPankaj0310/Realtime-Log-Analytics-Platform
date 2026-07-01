@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r services/user_service/requirements.txt
+          pip install -r services/order_service/requirements.txt
+          pip install -r services/payment_service/requirements.txt
+          pip install pytest ruff black
+      - name: Run Ruff
+        run: ruff check .
+      - name: Run Black
+        run: black --check .
+      - name: Run Pytest
+        run: |
+          pytest services/user_service/tests/test_routes.py
+      - name: Build Docker images
+        run: |
+          docker build -t user-service ./services/user_service
+          docker build -t order-service ./services/order_service
+          docker build -t payment-service ./services/payment_service
+          docker build -t analytics-api ./services/analytics_api
+          docker build -t nginx ./infrastructure/nginx
+      - name: Validate docker compose
+        run: docker compose config > /dev/null
