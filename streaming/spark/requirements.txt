@@ -1,3 +1,4 @@
-pyspark==3.5.3
-pydantic==2.11.7
-pydantic-settings==2.14.2
+pydantic>=2.10,<2.11
+pydantic-settings>=2.8,<2.9
+python-dotenv>=1.0
+elasticsearch==8.15.0

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
 
+from .producer import producer
 from .schemas import CreatePaymentRequest, PaymentEvent
 from .utils import current_timestamp, generate_request_id, get_client_ip, random_response_time
 
@@ -7,6 +8,7 @@ router = APIRouter()
 
 
 def publish_event(event: PaymentEvent) -> bool:
+    producer.publish_event(event)
     return True
 
 

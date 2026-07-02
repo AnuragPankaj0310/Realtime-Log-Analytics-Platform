@@ -6,6 +6,12 @@ from .utils import current_timestamp, generate_request_id, get_client_ip, random
 
 router = APIRouter()
 
+
+def publish_event(event: LogEvent) -> bool:
+    producer.publish_event(event)
+    return True
+
+
 @router.post("/login")
 async def login(payload: LoginRequest, request: Request):
     event = LogEvent(

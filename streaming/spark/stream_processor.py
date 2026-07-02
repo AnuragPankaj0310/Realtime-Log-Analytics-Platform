@@ -1,19 +1,23 @@
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 
-from streaming.spark.config import settings
-from streaming.spark.elastic import write_to_elasticsearch
-from streaming.spark.schema import log_schema
+from config import settings
+from elastic import write_to_elasticsearch
+from schema import log_schema
 
 
 def start_streaming():
-    spark = SparkSession.builder.appName("log-analytics").getOrCreate()
+    spark = (
+        SparkSession.builder
+        .appName("log-analytics")
+        .getOrCreate()
+    )
 
     df = (
         spark.readStream.format("kafka")
         .option("kafka.bootstrap.servers", settings.kafka_bootstrap_servers)
         .option("subscribe", settings.kafka_topic)
-        .option("startingOffsets", "latest")
+        .option("startingOffsets", "earliest")
         .load()
     )
 
@@ -31,8 +35,11 @@ def start_streaming():
     )
 
     query = (
-        aggregated.writeStream.format("console")
+        aggregated.writeStream
         .outputMode("complete")
+        .foreachBatch(
+            lambda df, epoch: write_to_elasticsearch(df, "log-analytics")
+        )
         .option("checkpointLocation", settings.checkpoint_location)
         .start()
     )
@@ -42,3 +49,6 @@ def start_streaming():
 
 def main():
     start_streaming()
+
+if __name__ == "__main__":
+    main()

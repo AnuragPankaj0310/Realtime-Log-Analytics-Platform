@@ -1,6 +1,5 @@
-class ElasticsearchClient:
-    def __init__(self, host: str = "http://elasticsearch:9200"):
-        self.host = host
+from elasticsearch import Elasticsearch
 
-    def ping(self) -> bool:
-        return True
+es = Elasticsearch("http://elasticsearch:9200")
+
+INDEX = "log-analytics"

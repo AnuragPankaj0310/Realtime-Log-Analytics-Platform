@@ -1,5 +1,6 @@
 fastapi
 uvicorn[standard]
-elasticsearch
+elasticsearch==8.15.0
 pydantic
 python-dotenv
+redis==5.0.8

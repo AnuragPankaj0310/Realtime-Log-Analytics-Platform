@@ -145,6 +145,15 @@ services:
     networks:
       - log-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - log-network
+
   kibana:
     image: docker.elastic.co/kibana/kibana:8.15.0
     container_name: kibana
@@ -160,6 +169,17 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    networks:
+      - log-network
+
+  spark-streaming:
+    build:
+      context: ./streaming/spark
+    container_name: spark-streaming
+    restart: unless-stopped
+    depends_on:
+      - kafka
+      - elasticsearch
     networks:
       - log-network
 

@@ -1,4 +1,4 @@
-from pyspark.sql.types import StringType, StructField, StructType, TimestampType
+from pyspark.sql.types import StringType, StructField, StructType, TimestampType, IntegerType
 
 log_schema = StructType(
     [
@@ -8,7 +8,7 @@ log_schema = StructType(
         StructField("method", StringType(), True),
         StructField("user_id", StringType(), True),
         StructField("status", StringType(), True),
-        StructField("response_time_ms", StringType(), True),
+        StructField("response_time_ms", IntegerType(), True),
         StructField("ip_address", StringType(), True),
         StructField("timestamp", TimestampType(), True),
     ]
