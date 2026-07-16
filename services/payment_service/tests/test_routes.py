@@ -54,7 +54,7 @@ def test_get_missing_payment_returns_404(client):
     assert response.status_code == 404
 
 
-def test_create_payment_emits_real_status_code(monkeypatch):
+def test_create_payment_emits_real_status_code(monkeypatch, client):
     """The emitted Kafka event must carry the real HTTP status, not a hardcoded 'success'."""
     captured = {}
 
@@ -72,7 +72,7 @@ def test_create_payment_emits_real_status_code(monkeypatch):
     assert captured["status_code"] == 201
 
 
-def test_get_missing_payment_emits_404_status_code(monkeypatch):
+def test_get_missing_payment_emits_404_status_code(monkeypatch, client):
     """A 404 for a missing payment must propagate into the emitted Kafka event."""
     captured = {}
 

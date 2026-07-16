@@ -69,7 +69,7 @@ def test_get_missing_order_returns_404(client):
     assert response.status_code == 404
 
 
-def test_create_order_emits_real_status_code(monkeypatch):
+def test_create_order_emits_real_status_code(monkeypatch, client):
     """The emitted Kafka event must carry the real HTTP status, not a hardcoded 'success'."""
     captured = {}
 
@@ -87,7 +87,7 @@ def test_create_order_emits_real_status_code(monkeypatch):
     assert captured["status_code"] == 201
 
 
-def test_get_missing_order_emits_404_status_code(monkeypatch):
+def test_get_missing_order_emits_404_status_code(monkeypatch, client):
     """A 404 for a missing order must propagate into the emitted Kafka event."""
     captured = {}
 
