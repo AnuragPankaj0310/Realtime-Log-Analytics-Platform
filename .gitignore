@@ -1,34 +1,60 @@
 # Virtual Environment
 .venv/
+venv/
 
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-*.pyc
 
 # Environment
 .env
+.env.*
+!.env.example
 
-# IDEs
+# IDE
 .vscode/
 .idea/
 
 # Logs
-logs/
+logs/*.log
 *.log
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
+junit.xml
 
 # Build
 build/
 dist/
 *.egg-info/
 
+# Node
+node_modules/
+dashboard/dist/
+
 # OS
 .DS_Store
 Thumbs.db
+
+# Docker
+*.override.yml
+
+# Spark checkpoints & temp files
+spark-warehouse/
+streaming/checkpoints/
+derby.log
+metastore_db/
+
+# Elasticsearch data (local dev volumes managed by Docker)
+esdata/
+
+# k6 results
+k6-results/
+load_tests/results/
+
+# Secrets / keys
+*.pem
+*.key
+*.cert

@@ -5,18 +5,28 @@ services:
     restart: unless-stopped
     ports:
       - "8001:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--backlog", "4096"]
     environment:
+      HTTP_MAX_CONNECTIONS: "500"
+      HTTP_MAX_KEEPALIVE: "100"
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TOPIC: application-logs
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       - kafka
+      - redis
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/users/health').read()"]
       interval: 30s
       timeout: 5s
       retries: 3
     networks:
       - log-network
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   order-service:
     build:
@@ -24,18 +34,28 @@ services:
     restart: unless-stopped
     ports:
       - "8002:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--backlog", "4096"]
     environment:
+      HTTP_MAX_CONNECTIONS: "500"
+      HTTP_MAX_KEEPALIVE: "100"
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TOPIC: application-logs
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       - kafka
+      - redis
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/orders/health').read()"]
       interval: 30s
       timeout: 5s
       retries: 3
     networks:
       - log-network
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   payment-service:
     build:
@@ -43,18 +63,26 @@ services:
     restart: unless-stopped
     ports:
       - "8003:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--backlog", "4096"]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TOPIC: application-logs
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       - kafka
+      - redis
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/payments/health').read()"]
       interval: 30s
       timeout: 5s
       retries: 3
     networks:
       - log-network
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   analytics-api:
     build:
@@ -62,15 +90,22 @@ services:
     restart: unless-stopped
     ports:
       - "8004:8000"
+
     environment:
       ELASTICSEARCH_HOST: http://elasticsearch:9200
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
     depends_on:
       - elasticsearch
+      - redis
+
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
       interval: 30s
       timeout: 5s
       retries: 3
+
     networks:
       - log-network
 
@@ -86,12 +121,17 @@ services:
       - payment-service
       - analytics-api
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80/"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/users/health"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 20s
     networks:
       - log-network
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   kafka:
     image: apache/kafka:3.8.0
@@ -164,11 +204,6 @@ services:
       ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
     depends_on:
       - elasticsearch
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5601/api/status"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
     networks:
       - log-network
 
@@ -183,8 +218,44 @@ services:
     networks:
       - log-network
 
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: grafana
+    restart: unless-stopped
+
+    ports:
+      - "3001:3000"
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+
+    depends_on:
+      - elasticsearch
+
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+    networks:
+      - log-network
+
+  dashboard:
+    build:
+      context: ./dashboard
+    container_name: dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - analytics-api
+      - nginx
+    networks:
+      - log-network
+
 volumes:
   elasticsearch-data:
+  grafana-data:
+  redis-data:
 
 networks:
   log-network:

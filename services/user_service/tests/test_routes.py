@@ -40,3 +40,21 @@ def test_signup_endpoint(client):
     )
     assert response.status_code == 200
     assert response.json()["status"] == "success"
+
+
+def test_login_failure_emits_status_code(monkeypatch):
+    captured = {}
+
+    def fake_publish(event):
+        captured["event"] = event
+
+    monkeypatch.setattr(routes.producer, "publish_event", fake_publish)
+
+    with TestClient(routes.router) as test_client:
+        response = test_client.post(
+            "/users/login",
+            json={"email": "missing@example.com", "password": "wrong"},
+        )
+
+    assert response.status_code == 401
+    assert captured["event"].status == "401"

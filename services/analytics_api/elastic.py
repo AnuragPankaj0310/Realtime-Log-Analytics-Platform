@@ -1,5 +1,6 @@
 from elasticsearch import Elasticsearch
 
-es = Elasticsearch("http://elasticsearch:9200")
+from .config import settings
 
-INDEX = "log-analytics"
+es = Elasticsearch(settings.elasticsearch_host)
+INDEX = settings.elasticsearch_index

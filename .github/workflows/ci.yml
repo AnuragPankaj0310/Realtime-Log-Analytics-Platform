@@ -14,20 +14,37 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r services/user_service/requirements.txt
           pip install -r services/order_service/requirements.txt
           pip install -r services/payment_service/requirements.txt
+          pip install -r services/analytics_api/requirements.txt
           pip install pytest ruff black
+
       - name: Run Ruff
         run: ruff check .
+
       - name: Run Black
         run: black --check .
-      - name: Run Pytest
-        run: |
-          pytest services/user_service/tests/test_routes.py
+
+      # Smoke-test: catch broken imports before Docker build wastes time.
+      # This is exactly the check that would have caught the analytics_api
+      # relative-import regression in the previous submission.
+      - name: Import smoke test — analytics_api
+        run: python -c "from services.analytics_api.main import app; print('analytics_api import OK')"
+
+      - name: Run Pytest — user_service
+        run: pytest services/user_service/tests/test_routes.py -v
+
+      - name: Run Pytest — order_service
+        run: pytest services/order_service/tests/test_routes.py -v
+
+      - name: Run Pytest — payment_service
+        run: pytest services/payment_service/tests/test_routes.py -v
+
       - name: Build Docker images
         run: |
           docker build -t user-service ./services/user_service
@@ -35,5 +52,6 @@ jobs:
           docker build -t payment-service ./services/payment_service
           docker build -t analytics-api ./services/analytics_api
           docker build -t nginx ./infrastructure/nginx
+
       - name: Validate docker compose
         run: docker compose config > /dev/null

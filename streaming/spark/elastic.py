@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 
@@ -21,16 +22,17 @@ def write_to_elasticsearch(df, index_name: str):
     actions = []
     for row in rows:
         payload = row.asDict(recursive=True)
-        actions.append({"index": {"_index": index_name}})
-        actions.append(payload)
+        payload_id = hashlib.sha256(
+            json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
+        ).hexdigest()
+        actions.append(
+            {
+                "_index": index_name,
+                "_id": payload_id,
+                "_op_type": "index",
+                "_source": payload,
+            }
+        )
 
     if actions:
-        actions = [
-        {
-            "_index": index_name,
-            "_source": row.asDict(recursive=True)
-        }
-        for row in rows
-    ]
-
-    bulk(client, actions)
+        bulk(client, actions)
