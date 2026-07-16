@@ -88,7 +88,8 @@ async def create_order(payload: CreateOrderRequest, request: Request):
             if trace_id:
                 headers["X-Trace-ID"] = trace_id
             headers["X-Span-ID"] = span_id
-            headers["X-Correlation-ID"] = correlation_id
+            if correlation_id:
+                headers["X-Correlation-ID"] = correlation_id
 
             client = request.app.state.client
             resp = await client.post(

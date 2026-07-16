@@ -5,9 +5,19 @@ from services.order_service.app import routes
 from services.order_service.app.main import app
 
 
+class MockResponse:
+    def raise_for_status(self):
+        pass
+
+async def mock_post(*args, **kwargs):
+    return MockResponse()
+
 @pytest.fixture
 def client(monkeypatch):
     monkeypatch.setattr(routes, "_emit_event", lambda *args, **kwargs: None)
+    monkeypatch.setattr("services.order_service.app.producer.producer.initialize", lambda: None)
+    monkeypatch.setattr("services.order_service.app.producer.producer.close", lambda: None)
+    monkeypatch.setattr("services.order_service.app.http_client.http_client.post", mock_post)
     with TestClient(app) as test_client:
         yield test_client
 
