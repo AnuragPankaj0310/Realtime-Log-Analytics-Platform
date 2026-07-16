@@ -8,8 +8,12 @@ from services.payment_service.app.main import app
 @pytest.fixture
 def client(monkeypatch):
     monkeypatch.setattr(routes, "_emit_event", lambda *args, **kwargs: None)
-    monkeypatch.setattr("services.payment_service.app.producer.producer.initialize", lambda: None)
-    monkeypatch.setattr("services.payment_service.app.producer.producer.close", lambda: None)
+    monkeypatch.setattr(
+        "services.payment_service.app.producer.producer.initialize", lambda: None
+    )
+    monkeypatch.setattr(
+        "services.payment_service.app.producer.producer.close", lambda: None
+    )
     with TestClient(app) as test_client:
         yield test_client
 
