@@ -73,16 +73,15 @@ def test_create_order_emits_real_status_code(monkeypatch):
     """The emitted Kafka event must carry the real HTTP status, not a hardcoded 'success'."""
     captured = {}
 
-    def fake_emit(request, event_name, status_code, response_time_ms, order_id=None):
+    def fake_emit(request, event_name, status_code, *args, **kwargs):
         captured["status_code"] = status_code
 
     monkeypatch.setattr(routes, "_emit_event", fake_emit)
 
-    with TestClient(routes.router) as test_client:
-        response = test_client.post(
-            "/orders",
-            json={"order_id": "ord-003", "customer_id": "cust-3", "amount": 10.0},
-        )
+    response = client.post(
+        "/orders",
+        json={"order_id": "ord-003", "customer_id": "cust-3", "amount": 10.0},
+    )
 
     assert response.status_code == 201
     assert captured["status_code"] == 201
@@ -92,12 +91,11 @@ def test_get_missing_order_emits_404_status_code(monkeypatch):
     """A 404 for a missing order must propagate into the emitted Kafka event."""
     captured = {}
 
-    def fake_emit(request, event_name, status_code, response_time_ms, order_id=None):
+    def fake_emit(request, event_name, status_code, *args, **kwargs):
         captured["status_code"] = status_code
 
     monkeypatch.setattr(routes, "_emit_event", fake_emit)
 
-    with TestClient(routes.router) as test_client:
-        test_client.get("/orders/nonexistent-id")
+    client.get("/orders/nonexistent-id")
 
     assert captured["status_code"] == 404

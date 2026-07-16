@@ -58,16 +58,15 @@ def test_create_payment_emits_real_status_code(monkeypatch):
     """The emitted Kafka event must carry the real HTTP status, not a hardcoded 'success'."""
     captured = {}
 
-    def fake_emit(request, event_name, status_code, response_time_ms, payment_id=None):
+    def fake_emit(request, event_name, status_code, *args, **kwargs):
         captured["status_code"] = status_code
 
     monkeypatch.setattr(routes, "_emit_event", fake_emit)
 
-    with TestClient(routes.router) as test_client:
-        response = test_client.post(
-            "/payments",
-            json={"payment_id": "pay-003", "order_id": "ord-003", "amount": 10.0},
-        )
+    response = client.post(
+        "/payments",
+        json={"payment_id": "pay-003", "order_id": "ord-003", "amount": 10.0},
+    )
 
     assert response.status_code == 201
     assert captured["status_code"] == 201
@@ -77,12 +76,11 @@ def test_get_missing_payment_emits_404_status_code(monkeypatch):
     """A 404 for a missing payment must propagate into the emitted Kafka event."""
     captured = {}
 
-    def fake_emit(request, event_name, status_code, response_time_ms, payment_id=None):
+    def fake_emit(request, event_name, status_code, *args, **kwargs):
         captured["status_code"] = status_code
 
     monkeypatch.setattr(routes, "_emit_event", fake_emit)
 
-    with TestClient(routes.router) as test_client:
-        test_client.get("/payments/nonexistent-id")
+    client.get("/payments/nonexistent-id")
 
     assert captured["status_code"] == 404
