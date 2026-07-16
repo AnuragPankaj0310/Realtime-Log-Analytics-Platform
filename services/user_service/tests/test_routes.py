@@ -57,4 +57,5 @@ def test_login_failure_emits_status_code(monkeypatch):
         )
 
     assert response.status_code == 401
-    assert captured["event"].status == "401"
+    assert captured["event"].status == "error"
+    assert captured["event"].status_code == 401
