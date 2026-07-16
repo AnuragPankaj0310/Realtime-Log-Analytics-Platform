@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
+
 
 class LatencyMetrics(BaseModel):
     avg: float = 0.0
@@ -7,6 +8,7 @@ class LatencyMetrics(BaseModel):
     p90: float = 0.0
     p95: float = 0.0
     p99: float = 0.0
+
 
 class TrafficOverTime(BaseModel):
     time: str
@@ -17,6 +19,7 @@ class TrafficOverTime(BaseModel):
     latency_p95: float = 0.0
     latency_p99: float = 0.0
 
+
 class EndpointMetrics(BaseModel):
     endpoint: str
     requests: int
@@ -26,16 +29,19 @@ class EndpointMetrics(BaseModel):
     error_rate: float = 0.0
     status_distribution: Dict[str, int] = {}
 
+
 class ServiceMetrics(BaseModel):
     service: str
     availability: float
     throughput: float
     errors: float
     latency: LatencyMetrics
-    
+
+
 class LatencyBucket(BaseModel):
     bucket: str
     count: int
+
 
 class UnifiedMetricsResponse(BaseModel):
     timestamp: str
@@ -44,7 +50,7 @@ class UnifiedMetricsResponse(BaseModel):
     throughput: float
     errors: float
     latency: LatencyMetrics
-    
+
     traffic_over_time: List[TrafficOverTime] = []
     top_endpoints: List[EndpointMetrics] = []
     slow_endpoints: List[EndpointMetrics] = []

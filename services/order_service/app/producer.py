@@ -33,10 +33,7 @@ class KafkaEventProducer:
         if self.producer is None:
             return
         try:
-            self.producer.send(
-                settings.kafka_topic,
-                event.model_dump(mode="json")
-            )
+            self.producer.send(settings.kafka_topic, event.model_dump(mode="json"))
         except Exception as exc:
             self.logger.exception("Kafka publish failed: %s", exc)
 

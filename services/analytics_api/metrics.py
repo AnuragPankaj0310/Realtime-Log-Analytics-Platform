@@ -2,8 +2,9 @@ import json
 from datetime import datetime, timezone
 from typing import Dict, Any
 
-from .elastic import es, INDEX
+from .elastic import es
 from .redis_client import redis_client
+
 
 class MetricsService:
     @staticmethod
@@ -47,7 +48,7 @@ class MetricsService:
                 "bool": {
                     "must": [
                         {"range": {"timestamp": {"gte": f"now-{time_range}"}}},
-                        {"range": {"response_time_ms": {"gte": 0}}}
+                        {"range": {"response_time_ms": {"gte": 0}}},
                     ]
                 }
             }
@@ -60,7 +61,12 @@ class MetricsService:
                 aggs={
                     "errors": {"filter": {"range": {"status_code": {"gte": 400}}}},
                     "avg_latency": {"avg": {"field": "response_time_ms"}},
-                    "latency": {"percentiles": {"field": "response_time_ms", "percents": [50, 90, 95, 99]}},
+                    "latency": {
+                        "percentiles": {
+                            "field": "response_time_ms",
+                            "percents": [50, 90, 95, 99],
+                        }
+                    },
                     "latency_histogram": {
                         "range": {
                             "field": "response_time_ms",
@@ -70,18 +76,28 @@ class MetricsService:
                                 {"from": 100, "to": 200, "key": "100-200ms"},
                                 {"from": 200, "to": 500, "key": "200-500ms"},
                                 {"from": 500, "to": 1000, "key": "500ms-1s"},
-                                {"from": 1000, "key": ">1s"}
-                            ]
+                                {"from": 1000, "key": ">1s"},
+                            ],
                         }
                     },
                     "status_200": {"filter": {"term": {"status_code": 200}}},
                     "status_404": {"filter": {"term": {"status_code": 404}}},
                     "status_500": {"filter": {"term": {"status_code": 500}}},
                     "traffic_over_time": {
-                        "date_histogram": {"field": "timestamp", "fixed_interval": interval},
+                        "date_histogram": {
+                            "field": "timestamp",
+                            "fixed_interval": interval,
+                        },
                         "aggs": {
-                            "errors": {"filter": {"range": {"status_code": {"gte": 400}}}},
-                            "latency": {"percentiles": {"field": "response_time_ms", "percents": [50, 90, 95, 99]}},
+                            "errors": {
+                                "filter": {"range": {"status_code": {"gte": 400}}}
+                            },
+                            "latency": {
+                                "percentiles": {
+                                    "field": "response_time_ms",
+                                    "percents": [50, 90, 95, 99],
+                                }
+                            },
                             "latency_histogram": {
                                 "range": {
                                     "field": "response_time_ms",
@@ -91,15 +107,15 @@ class MetricsService:
                                         {"from": 100, "to": 200, "key": "100-200ms"},
                                         {"from": 200, "to": 500, "key": "200-500ms"},
                                         {"from": 500, "to": 1000, "key": "500ms-1s"},
-                                        {"from": 1000, "key": ">1s"}
-                                    ]
+                                        {"from": 1000, "key": ">1s"},
+                                    ],
                                 }
-                            }
-                        }
-                    }
-                }
+                            },
+                        },
+                    },
+                },
             )
-            
+
             # 2. Service Metrics
             service_res = es.search(
                 index="raw-logs",
@@ -109,14 +125,21 @@ class MetricsService:
                     "services": {
                         "terms": {"field": "service.keyword", "size": 20},
                         "aggs": {
-                            "errors": {"filter": {"range": {"status_code": {"gte": 400}}}},
+                            "errors": {
+                                "filter": {"range": {"status_code": {"gte": 400}}}
+                            },
                             "avg_latency": {"avg": {"field": "response_time_ms"}},
-                            "latency": {"percentiles": {"field": "response_time_ms", "percents": [50, 90, 95, 99]}}
-                        }
+                            "latency": {
+                                "percentiles": {
+                                    "field": "response_time_ms",
+                                    "percents": [50, 90, 95, 99],
+                                }
+                            },
+                        },
                     }
-                }
+                },
             )
-            
+
             # 3. Endpoint Metrics
             endpoint_res = es.search(
                 index="raw-logs",
@@ -124,32 +147,57 @@ class MetricsService:
                 query=base_query,
                 aggs={
                     "endpoints": {
-                        "terms": {"field": "endpoint.keyword", "size": 20, "order": {"_count": "desc"}},
+                        "terms": {
+                            "field": "endpoint.keyword",
+                            "size": 20,
+                            "order": {"_count": "desc"},
+                        },
                         "aggs": {
-                            "errors": {"filter": {"range": {"status_code": {"gte": 400}}}},
+                            "errors": {
+                                "filter": {"range": {"status_code": {"gte": 400}}}
+                            },
                             "avg_latency": {"avg": {"field": "response_time_ms"}},
-                            "latency": {"percentiles": {"field": "response_time_ms", "percents": [95, 99]}}
-                        }
+                            "latency": {
+                                "percentiles": {
+                                    "field": "response_time_ms",
+                                    "percents": [95, 99],
+                                }
+                            },
+                        },
                     },
                     "slow_endpoints": {
-                        "terms": {"field": "endpoint.keyword", "size": 20, "order": {"avg_latency": "desc"}},
+                        "terms": {
+                            "field": "endpoint.keyword",
+                            "size": 20,
+                            "order": {"avg_latency": "desc"},
+                        },
                         "aggs": {
-                            "errors": {"filter": {"range": {"status_code": {"gte": 400}}}},
+                            "errors": {
+                                "filter": {"range": {"status_code": {"gte": 400}}}
+                            },
                             "avg_latency": {"avg": {"field": "response_time_ms"}},
-                            "latency": {"percentiles": {"field": "response_time_ms", "percents": [95, 99]}}
-                        }
-                    }
-                }
+                            "latency": {
+                                "percentiles": {
+                                    "field": "response_time_ms",
+                                    "percents": [95, 99],
+                                }
+                            },
+                        },
+                    },
+                },
             )
 
             g_aggs = global_res.get("aggregations", {})
             total_req = global_res.get("hits", {}).get("total", {}).get("value") or 0
             total_err = g_aggs.get("errors", {}).get("doc_count") or 0
-            
+
             time_buckets = g_aggs.get("traffic_over_time", {}).get("buckets", [])
             heatmap_data = []
             for time_idx, b in enumerate(time_buckets):
-                hist = {r["key"]: r["doc_count"] for r in b.get("latency_histogram", {}).get("buckets", [])}
+                hist = {
+                    r["key"]: r["doc_count"]
+                    for r in b.get("latency_histogram", {}).get("buckets", [])
+                }
                 heatmap_data.append([time_idx, 0, int(hist.get(">1s", 0))])
                 heatmap_data.append([time_idx, 1, int(hist.get("500ms-1s", 0))])
                 heatmap_data.append([time_idx, 2, int(hist.get("200-500ms", 0))])
@@ -158,7 +206,10 @@ class MetricsService:
                 heatmap_data.append([time_idx, 5, int(hist.get("0-50ms", 0))])
 
             global_latency_raw = g_aggs.get("latency", {}).get("values", {})
-            hist_global = {r["key"]: r["doc_count"] for r in g_aggs.get("latency_histogram", {}).get("buckets", [])}
+            hist_global = {
+                r["key"]: r["doc_count"]
+                for r in g_aggs.get("latency_histogram", {}).get("buckets", [])
+            }
 
             # Build unified response
             res = {
@@ -172,79 +223,159 @@ class MetricsService:
                     "p50": global_latency_raw.get("50.0") or 0,
                     "p90": global_latency_raw.get("90.0") or 0,
                     "p95": global_latency_raw.get("95.0") or 0,
-                    "p99": global_latency_raw.get("99.0") or 0
+                    "p99": global_latency_raw.get("99.0") or 0,
                 },
                 "traffic_over_time": [
                     {
                         "time": b["key_as_string"],
                         "requests": b.get("doc_count") or 0,
                         "errors": b.get("errors", {}).get("doc_count") or 0,
-                        "latency_p50": b.get("latency", {}).get("values", {}).get("50.0") or 0,
-                        "latency_p90": b.get("latency", {}).get("values", {}).get("90.0") or 0,
-                        "latency_p95": b.get("latency", {}).get("values", {}).get("95.0") or 0,
-                        "latency_p99": b.get("latency", {}).get("values", {}).get("99.0") or 0
-                    } for b in time_buckets
+                        "latency_p50": b.get("latency", {})
+                        .get("values", {})
+                        .get("50.0")
+                        or 0,
+                        "latency_p90": b.get("latency", {})
+                        .get("values", {})
+                        .get("90.0")
+                        or 0,
+                        "latency_p95": b.get("latency", {})
+                        .get("values", {})
+                        .get("95.0")
+                        or 0,
+                        "latency_p99": b.get("latency", {})
+                        .get("values", {})
+                        .get("99.0")
+                        or 0,
+                    }
+                    for b in time_buckets
                 ],
                 "top_endpoints": [
                     {
                         "endpoint": b["key"],
                         "requests": b.get("doc_count") or 0,
                         "avg_latency": b.get("avg_latency", {}).get("value") or 0,
-                        "p95_latency": b.get("latency", {}).get("values", {}).get("95.0") or 0,
-                        "p99_latency": b.get("latency", {}).get("values", {}).get("99.0") or 0,
-                        "error_rate": (b.get("errors", {}).get("doc_count") or 0) / max(b.get("doc_count") or 1, 1),
-                        "status_distribution": {}
-                    } for b in endpoint_res.get("aggregations", {}).get("endpoints", {}).get("buckets", [])
+                        "p95_latency": b.get("latency", {})
+                        .get("values", {})
+                        .get("95.0")
+                        or 0,
+                        "p99_latency": b.get("latency", {})
+                        .get("values", {})
+                        .get("99.0")
+                        or 0,
+                        "error_rate": (b.get("errors", {}).get("doc_count") or 0)
+                        / max(b.get("doc_count") or 1, 1),
+                        "status_distribution": {},
+                    }
+                    for b in endpoint_res.get("aggregations", {})
+                    .get("endpoints", {})
+                    .get("buckets", [])
                 ],
                 "slow_endpoints": [
                     {
                         "endpoint": b["key"],
                         "requests": b.get("doc_count") or 0,
                         "avg_latency": b.get("avg_latency", {}).get("value") or 0,
-                        "p95_latency": b.get("latency", {}).get("values", {}).get("95.0") or 0,
-                        "p99_latency": b.get("latency", {}).get("values", {}).get("99.0") or 0,
-                        "error_rate": (b.get("errors", {}).get("doc_count") or 0) / max(b.get("doc_count") or 1, 1),
-                        "status_distribution": {}
-                    } for b in endpoint_res.get("aggregations", {}).get("slow_endpoints", {}).get("buckets", [])
+                        "p95_latency": b.get("latency", {})
+                        .get("values", {})
+                        .get("95.0")
+                        or 0,
+                        "p99_latency": b.get("latency", {})
+                        .get("values", {})
+                        .get("99.0")
+                        or 0,
+                        "error_rate": (b.get("errors", {}).get("doc_count") or 0)
+                        / max(b.get("doc_count") or 1, 1),
+                        "status_distribution": {},
+                    }
+                    for b in endpoint_res.get("aggregations", {})
+                    .get("slow_endpoints", {})
+                    .get("buckets", [])
                 ],
                 "traffic_by_service": [
                     {
                         "service": b["key"],
-                        "availability": max(0.0, 100.0 - ((b.get("errors", {}).get("doc_count") or 0) / max(b.get("doc_count") or 1, 1) * 100)),
-                        "throughput": round((b.get("doc_count") or 0) / window_seconds, 2),
+                        "availability": max(
+                            0.0,
+                            100.0
+                            - (
+                                (b.get("errors", {}).get("doc_count") or 0)
+                                / max(b.get("doc_count") or 1, 1)
+                                * 100
+                            ),
+                        ),
+                        "throughput": round(
+                            (b.get("doc_count") or 0) / window_seconds, 2
+                        ),
                         "errors": b.get("errors", {}).get("doc_count") or 0,
                         "latency": {
                             "avg": b.get("avg_latency", {}).get("value") or 0,
-                            "p50": b.get("latency", {}).get("values", {}).get("50.0") or 0,
-                            "p90": b.get("latency", {}).get("values", {}).get("90.0") or 0,
-                            "p95": b.get("latency", {}).get("values", {}).get("95.0") or 0,
-                            "p99": b.get("latency", {}).get("values", {}).get("99.0") or 0
-                        }
-                    } for b in service_res.get("aggregations", {}).get("services", {}).get("buckets", [])
+                            "p50": b.get("latency", {}).get("values", {}).get("50.0")
+                            or 0,
+                            "p90": b.get("latency", {}).get("values", {}).get("90.0")
+                            or 0,
+                            "p95": b.get("latency", {}).get("values", {}).get("95.0")
+                            or 0,
+                            "p99": b.get("latency", {}).get("values", {}).get("99.0")
+                            or 0,
+                        },
+                    }
+                    for b in service_res.get("aggregations", {})
+                    .get("services", {})
+                    .get("buckets", [])
                 ],
                 "http_status_distribution": [
-                    {"status": "200", "count": int(g_aggs.get("status_200", {}).get("doc_count") or 0)},
-                    {"status": "404", "count": int(g_aggs.get("status_404", {}).get("doc_count") or 0)},
-                    {"status": "500", "count": int(g_aggs.get("status_500", {}).get("doc_count") or 0)}
+                    {
+                        "status": "200",
+                        "count": int(
+                            g_aggs.get("status_200", {}).get("doc_count") or 0
+                        ),
+                    },
+                    {
+                        "status": "404",
+                        "count": int(
+                            g_aggs.get("status_404", {}).get("doc_count") or 0
+                        ),
+                    },
+                    {
+                        "status": "500",
+                        "count": int(
+                            g_aggs.get("status_500", {}).get("doc_count") or 0
+                        ),
+                    },
                 ],
                 "latency_histogram": [
                     {"bucket": "0-50ms", "count": int(hist_global.get("0-50ms", 0))},
-                    {"bucket": "50-100ms", "count": int(hist_global.get("50-100ms", 0))},
-                    {"bucket": "100-200ms", "count": int(hist_global.get("100-200ms", 0))},
-                    {"bucket": "200-500ms", "count": int(hist_global.get("200-500ms", 0))},
-                    {"bucket": "500ms-1s", "count": int(hist_global.get("500ms-1s", 0))},
+                    {
+                        "bucket": "50-100ms",
+                        "count": int(hist_global.get("50-100ms", 0)),
+                    },
+                    {
+                        "bucket": "100-200ms",
+                        "count": int(hist_global.get("100-200ms", 0)),
+                    },
+                    {
+                        "bucket": "200-500ms",
+                        "count": int(hist_global.get("200-500ms", 0)),
+                    },
+                    {
+                        "bucket": "500ms-1s",
+                        "count": int(hist_global.get("500ms-1s", 0)),
+                    },
                     {"bucket": ">1s", "count": int(hist_global.get(">1s", 0))},
                 ],
-                "heatmap": heatmap_data
+                "heatmap": heatmap_data,
             }
-            
+
             # Simple heatmap data structure: [time_index, bucket_index, count]
-            # Heatmap handles global latency over time percentiles 
-            
+            # Heatmap handles global latency over time percentiles
+
             MetricsService.set_cached(cache_key, res, 2)
-            return {"metrics": res} # returning nested metrics to keep compatibility with existing frontend payload shape temporarily
+            return {
+                "metrics": res
+            }  # returning nested metrics to keep compatibility with existing frontend payload shape temporarily
         except Exception as e:
             import traceback
+
             traceback.print_exc()
             print(f"Error fetching metrics from ES: {e}")
             return cached if cached else {}
@@ -271,14 +402,11 @@ class MetricsService:
                 "latency_p90": 0,
                 "latency_p95": 0,
                 "latency_p99": 0,
-                "availability": 100.0
+                "availability": 100.0,
             },
             "traffic_over_time": [],
             "top_endpoints": [],
-            "dependencies": {
-                "incoming": [],
-                "outgoing": []
-            }
+            "dependencies": {"incoming": [], "outgoing": []},
         }
 
         interval = "1m"
@@ -299,48 +427,64 @@ class MetricsService:
                         "must": [
                             {"range": {"timestamp": {"gte": f"now-{time_range}"}}},
                             {"range": {"response_time_ms": {"gte": 0}}},
-                            {"term": {"service.keyword": service_id}}
+                            {"term": {"service.keyword": service_id}},
                         ]
                     }
                 },
                 aggs={
                     "endpoints": {
-                        "terms": {"field": "endpoint.keyword", "size": 10, "order": {"_count": "desc"}},
-                        "aggs": {"avg_latency": {"avg": {"field": "response_time_ms"}}}
+                        "terms": {
+                            "field": "endpoint.keyword",
+                            "size": 10,
+                            "order": {"_count": "desc"},
+                        },
+                        "aggs": {"avg_latency": {"avg": {"field": "response_time_ms"}}},
                     },
                     "traffic_over_time": {
-                        "date_histogram": {"field": "timestamp", "fixed_interval": interval},
+                        "date_histogram": {
+                            "field": "timestamp",
+                            "fixed_interval": interval,
+                        },
                         "aggs": {
-                            "errors": {"filter": {"range": {"status_code": {"gte": 400}}}}
-                        }
+                            "errors": {
+                                "filter": {"range": {"status_code": {"gte": 400}}}
+                            }
+                        },
                     },
                     "latency": {
-                        "percentiles": {"field": "response_time_ms", "percents": [50, 90, 95, 99]}
+                        "percentiles": {
+                            "field": "response_time_ms",
+                            "percents": [50, 90, 95, 99],
+                        }
                     },
-                    "errors": {
-                        "filter": {"range": {"status_code": {"gte": 400}}}
-                    }
-                }
+                    "errors": {"filter": {"range": {"status_code": {"gte": 400}}}},
+                },
             )
-            
+
             aggs = response.get("aggregations", {})
             total_requests = response.get("hits", {}).get("total", {}).get("value", 0)
             total_errors = aggs.get("errors", {}).get("doc_count", 0)
-            
+
             top_endpoints = [
-                {"endpoint": b["key"], "requests": b["doc_count"], "avg_latency": b.get("avg_latency", {}).get("value") or 0} 
+                {
+                    "endpoint": b["key"],
+                    "requests": b["doc_count"],
+                    "avg_latency": b.get("avg_latency", {}).get("value") or 0,
+                }
                 for b in aggs.get("endpoints", {}).get("buckets", [])
             ]
-            
+
             traffic_over_time = [
                 {
-                    "time": b["key_as_string"], 
-                    "rps": round(b["doc_count"] / 60, 2), # Assuming 1m interval approximation for RPS
-                    "errors": b.get("errors", {}).get("doc_count", 0)
-                } 
+                    "time": b["key_as_string"],
+                    "rps": round(
+                        b["doc_count"] / 60, 2
+                    ),  # Assuming 1m interval approximation for RPS
+                    "errors": b.get("errors", {}).get("doc_count", 0),
+                }
                 for b in aggs.get("traffic_over_time", {}).get("buckets", [])
             ]
-            
+
             latency_raw = aggs.get("latency", {}).get("values", {})
             error_rate = total_errors / max(total_requests, 1)
 
@@ -369,13 +513,13 @@ class MetricsService:
                     "latency_p90": latency_raw.get("90.0") or 0,
                     "latency_p95": latency_raw.get("95.0") or 0,
                     "latency_p99": latency_raw.get("99.0") or 0,
-                    "availability": max(0, 100.0 - (error_rate * 100))
+                    "availability": max(0, 100.0 - (error_rate * 100)),
                 },
                 "traffic_over_time": traffic_over_time,
                 "top_endpoints": top_endpoints,
-                "dependencies": dependencies
+                "dependencies": dependencies,
             }
-            
+
             MetricsService.set_cached(cache_key, res, expire=5)
             return res
         except Exception as e:

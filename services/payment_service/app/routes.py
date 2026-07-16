@@ -1,3 +1,5 @@
+import os
+import uuid
 from time import perf_counter
 
 from fastapi import APIRouter, HTTPException, Request
@@ -16,8 +18,6 @@ router = APIRouter(
 payments = {}
 
 
-import uuid
-import os
 def _emit_event(
     request: Request,
     event_name: str,
@@ -33,7 +33,7 @@ def _emit_event(
     parent_span_id = request.headers.get("x-span-id")
     correlation_id = request.headers.get("x-correlation-id") or trace_id
     req_id = request.headers.get("x-request-id") or str(uuid.uuid4())
-    
+
     event = PaymentEvent(
         event=event_name,
         operation=event_name,
@@ -88,7 +88,7 @@ async def create_payment(payload: CreatePaymentRequest, request: Request):
             int((perf_counter() - started_at) * 1000),
             payload.payment_id,
             request.headers.get("x-trace-id"),
-            payload.model_dump_json()
+            payload.model_dump_json(),
         )
 
 

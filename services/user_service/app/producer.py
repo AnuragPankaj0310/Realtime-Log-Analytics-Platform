@@ -22,7 +22,9 @@ class KafkaEventProducer:
             try:
                 self.producer = KafkaProducer(
                     bootstrap_servers=settings.kafka_bootstrap_servers.split(","),
-                    value_serializer=lambda value: json.dumps(value, default=str).encode("utf-8"),
+                    value_serializer=lambda value: json.dumps(
+                        value, default=str
+                    ).encode("utf-8"),
                     retries=3,
                 )
                 self.logger.info("Kafka producer initialized")
@@ -36,8 +38,7 @@ class KafkaEventProducer:
             return
         try:
             future = self.producer.send(
-                settings.kafka_topic,
-                event.model_dump(mode="json")
+                settings.kafka_topic, event.model_dump(mode="json")
             )
 
             metadata = future.get(timeout=10)

@@ -20,6 +20,8 @@ def configure_logging() -> None:
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    file_handler = RotatingFileHandler(log_dir / "user-service.log", maxBytes=5 * 1024 * 1024, backupCount=3)
+    file_handler = RotatingFileHandler(
+        log_dir / "user-service.log", maxBytes=5 * 1024 * 1024, backupCount=3
+    )
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)

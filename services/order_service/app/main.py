@@ -6,6 +6,7 @@ from .failure_middleware import FailureInjectionMiddleware
 from .producer import producer
 from .http_client import http_client
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     producer.initialize()
@@ -14,6 +15,7 @@ async def lifespan(app: FastAPI):
     yield
     await http_client.aclose()
     producer.close()
+
 
 app = FastAPI(
     title="Order Service",

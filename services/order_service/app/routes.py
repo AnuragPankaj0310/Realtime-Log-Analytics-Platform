@@ -1,3 +1,7 @@
+import asyncio
+import httpx
+import os
+import uuid
 from time import perf_counter
 
 from fastapi import APIRouter, HTTPException, Request
@@ -16,8 +20,6 @@ router = APIRouter(
 orders = {}
 
 
-import uuid
-import os
 def _emit_event(
     request: Request,
     event_name: str,
@@ -33,7 +35,7 @@ def _emit_event(
     parent_span_id = request.headers.get("x-span-id")
     correlation_id = request.headers.get("x-correlation-id") or trace_id
     req_id = request.headers.get("x-request-id") or str(uuid.uuid4())
-    
+
     event = OrderEvent(
         event=event_name,
         operation=event_name,
@@ -60,10 +62,10 @@ def _emit_event(
     )
     producer.publish_event(event)
 
-import asyncio
 
 # Protect downstreams with a concurrency limit
 order_semaphore = asyncio.Semaphore(200)
+
 
 @router.post("", status_code=201)
 async def create_order(payload: CreateOrderRequest, request: Request):
@@ -75,24 +77,24 @@ async def create_order(payload: CreateOrderRequest, request: Request):
 
         span_id = str(uuid.uuid4())
         correlation_id = request.headers.get("x-correlation-id") or trace_id
-        
+
         async with order_semaphore:
             payment_payload = {
                 "payment_id": str(uuid.uuid4()),
                 "order_id": payload.order_id,
-                "amount": payload.amount
+                "amount": payload.amount,
             }
             headers = {}
             if trace_id:
                 headers["X-Trace-ID"] = trace_id
             headers["X-Span-ID"] = span_id
             headers["X-Correlation-ID"] = correlation_id
-                
+
             client = request.app.state.client
             resp = await client.post(
                 "http://payment-service:8000/payments",
                 json=payment_payload,
-                headers=headers
+                headers=headers,
             )
             resp.raise_for_status()
 
@@ -104,12 +106,14 @@ async def create_order(payload: CreateOrderRequest, request: Request):
                 "message": "Order created and payment processed",
                 "request_id": generate_request_id(),
                 "order": orders[payload.order_id],
-                "payment": resp.json()
+                "payment": resp.json(),
             },
         )
     except httpx.HTTPStatusError as exc:
         status_code = exc.response.status_code
-        raise HTTPException(status_code=status_code, detail=f"Payment failed: {exc.response.text}")
+        raise HTTPException(
+            status_code=status_code, detail=f"Payment failed: {exc.response.text}"
+        )
     except HTTPException as exc:
         status_code = exc.status_code
         raise
@@ -121,7 +125,7 @@ async def create_order(payload: CreateOrderRequest, request: Request):
             int((perf_counter() - started_at) * 1000),
             payload.order_id,
             request.headers.get("x-trace-id"),
-            payload.model_dump_json()
+            payload.model_dump_json(),
         )
 
 

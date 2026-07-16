@@ -2,20 +2,36 @@ import argparse
 import subprocess
 import sys
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Generate load for Realtime Log Analytics Platform")
-    parser.add_argument("--profile", choices=["light", "medium", "heavy"], help="Pre-defined load profile")
-    parser.add_argument("--duration", type=int, help="Duration in seconds (for custom profile)", default=60)
-    parser.add_argument("--rps", type=int, help="Target Requests Per Second (RPS) (for custom profile)")
-    parser.add_argument("--concurrency", type=int, help="Number of concurrent VUs (for custom profile)")
-    
+    parser = argparse.ArgumentParser(
+        description="Generate load for Realtime Log Analytics Platform"
+    )
+    parser.add_argument(
+        "--profile",
+        choices=["light", "medium", "heavy"],
+        help="Pre-defined load profile",
+    )
+    parser.add_argument(
+        "--duration",
+        type=int,
+        help="Duration in seconds (for custom profile)",
+        default=60,
+    )
+    parser.add_argument(
+        "--rps", type=int, help="Target Requests Per Second (RPS) (for custom profile)"
+    )
+    parser.add_argument(
+        "--concurrency", type=int, help="Number of concurrent VUs (for custom profile)"
+    )
+
     args = parser.parse_args()
-    
+
     # Defaults
     vus = 10
     duration = "60s"
     sleep_time = 1.0
-    
+
     if args.profile == "light":
         vus = 5
         duration = "30s"
@@ -69,21 +85,19 @@ export default function () {{
   sleep({sleep_time});
 }}
 """
-    
+
     cmd = ["docker", "run", "--rm", "-i", "grafana/k6", "run", "-"]
-    print(f"Running k6 via Docker...")
-    
+    print("Running k6 via Docker...")
+
     try:
         process = subprocess.run(
-            cmd, 
-            input=script.encode('utf-8'),
-            stdout=sys.stdout,
-            stderr=sys.stderr
+            cmd, input=script.encode("utf-8"), stdout=sys.stdout, stderr=sys.stderr
         )
         sys.exit(process.returncode)
     except KeyboardInterrupt:
         print("\nLoad generation stopped.")
         sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

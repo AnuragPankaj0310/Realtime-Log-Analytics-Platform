@@ -52,6 +52,7 @@ jobs:
           docker build -t payment-service ./services/payment_service
           docker build -t analytics-api ./services/analytics_api
           docker build -t nginx ./infrastructure/nginx
+          docker build -t dashboard ./dashboard
 
       - name: Validate docker compose
         run: docker compose config > /dev/null

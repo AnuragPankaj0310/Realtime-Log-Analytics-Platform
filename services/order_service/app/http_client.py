@@ -1,6 +1,7 @@
 import httpx
 import os
 
+
 class HttpClient:
     def __init__(self):
         self.client = None
@@ -8,12 +9,7 @@ class HttpClient:
         self.max_keepalive = int(os.environ.get("HTTP_MAX_KEEPALIVE", 100))
 
     def initialize(self):
-        timeout = httpx.Timeout(
-            connect=2.0,
-            read=10.0,
-            write=10.0,
-            pool=5.0
-        )
+        timeout = httpx.Timeout(connect=2.0, read=10.0, write=10.0, pool=5.0)
         limits = httpx.Limits(
             max_connections=self.max_connections,
             max_keepalive_connections=self.max_keepalive,
@@ -33,5 +29,6 @@ class HttpClient:
         if not self.client:
             raise RuntimeError("HttpClient is not initialized")
         return await self.client.get(url, **kwargs)
+
 
 http_client = HttpClient()

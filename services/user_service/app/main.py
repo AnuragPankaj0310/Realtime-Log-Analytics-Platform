@@ -8,7 +8,12 @@ from .logger import configure_logging
 from .producer import producer
 from .http_client import http_client
 from .schemas import LoginRequest, SignupRequest
-from .routes import login as login_handler, logout as logout_handler, profile as profile_handler, signup as signup_handler
+from .routes import (
+    login as login_handler,
+    logout as logout_handler,
+    profile as profile_handler,
+    signup as signup_handler,
+)
 from .failure_middleware import FailureInjectionMiddleware
 
 
