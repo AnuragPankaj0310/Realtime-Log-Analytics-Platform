@@ -9,6 +9,9 @@ class MockResponse:
     def raise_for_status(self):
         pass
 
+    def json(self):
+        return {"payment_status": "mocked"}
+
 
 async def mock_post(*args, **kwargs):
     return MockResponse()
