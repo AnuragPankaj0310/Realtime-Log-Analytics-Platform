@@ -37,13 +37,13 @@ jobs:
         run: python -c "from services.analytics_api.main import app; print('analytics_api import OK')"
 
       - name: Run Pytest — user_service
-        run: pytest services/user_service/tests/test_routes.py -v
+        run: PYTHONPATH=. pytest services/user_service/tests/test_routes.py -v
 
       - name: Run Pytest — order_service
-        run: pytest services/order_service/tests/test_routes.py -v
+        run: PYTHONPATH=. pytest services/order_service/tests/test_routes.py -v
 
       - name: Run Pytest — payment_service
-        run: pytest services/payment_service/tests/test_routes.py -v
+        run: PYTHONPATH=. pytest services/payment_service/tests/test_routes.py -v
 
       - name: Build Docker images
         run: |
