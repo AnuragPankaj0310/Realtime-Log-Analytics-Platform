@@ -14,13 +14,16 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
     depends_on:
-      - kafka
-      - redis
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/users/health').read()"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 30s
     networks:
       - log-network
     ulimits:
@@ -44,14 +47,18 @@ services:
       REDIS_PORT: ${REDIS_PORT:-6379}
       PAYMENT_SERVICE_URL: ${PAYMENT_SERVICE_URL:-http://payment-service:8000/payments}
     depends_on:
-      - kafka
-      - redis
-      - payment-service
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/orders/health').read()"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 30s
     networks:
       - log-network
     ulimits:
@@ -72,13 +79,16 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
     depends_on:
-      - kafka
-      - redis
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/payments/health').read()"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 30s
     networks:
       - log-network
     ulimits:
@@ -99,14 +109,17 @@ services:
       REDIS_PORT: ${REDIS_PORT:-6379}
 
     depends_on:
-      - elasticsearch
-      - redis
+      elasticsearch:
+        condition: service_started
+      redis:
+        condition: service_healthy
 
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 30s
 
     networks:
       - log-network
@@ -118,10 +131,14 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - user-service
-      - order-service
-      - payment-service
-      - analytics-api
+      user-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      analytics-api:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/users/health"]
       interval: 30s
@@ -153,6 +170,12 @@ services:
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
     volumes:
       - kafka-data:/var/kafka/logs
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
     networks:
       - log-network
 
@@ -165,12 +188,14 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 30s
     networks:
       - log-network
 
@@ -190,7 +215,7 @@ services:
       - log-network
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.2-alpine
     container_name: redis
     restart: unless-stopped
     ports:
@@ -202,6 +227,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - log-network
 
@@ -229,8 +255,10 @@ services:
       ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:-http://elasticsearch:9200}
       CHECKPOINT_LOCATION: ${CHECKPOINT_LOCATION:-/data/checkpoints}
     depends_on:
-      - kafka
-      - elasticsearch
+      kafka:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_started
     volumes:
       - spark-checkpoints:/data/checkpoints
     networks:
@@ -265,8 +293,10 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - analytics-api
-      - nginx
+      analytics-api:
+        condition: service_healthy
+      nginx:
+        condition: service_healthy
     networks:
       - log-network
 
