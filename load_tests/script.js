@@ -35,7 +35,7 @@ export default function () {
     check(res, { 'status was 200 or 201': (r) => r.status == 200 || r.status == 201 });
   } else {
     // 20% traffic: Direct Order
-    let res = http.post(`${BASE_URL}/orders`, JSON.stringify({ order_id: "order-" + uuid, amount: 1200 }), {
+    let res = http.post(`${BASE_URL}/orders`, JSON.stringify({ order_id: "order-" + uuid, customer_id: uuid, amount: 1200 }), {
       headers: { 'Content-Type': 'application/json' },
     });
     check(res, { 'status was 201': (r) => r.status == 201 });
