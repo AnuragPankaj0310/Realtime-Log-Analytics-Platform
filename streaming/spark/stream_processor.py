@@ -172,7 +172,7 @@ def start_streaming():
         service_agg.writeStream.queryName("service-metrics")
         .outputMode("append")
         .foreachBatch(lambda df, epoch: write_to_elasticsearch(df, "service-metrics"))
-        .option("checkpointLocation", settings.checkpoint_location + "_service")
+        .option("checkpointLocation", settings.checkpoint_location + "/service")
         .start()
     )
 
@@ -180,7 +180,7 @@ def start_streaming():
         endpoint_agg.writeStream.queryName("endpoint-metrics")
         .outputMode("append")
         .foreachBatch(lambda df, epoch: write_to_elasticsearch(df, "endpoint-metrics"))
-        .option("checkpointLocation", settings.checkpoint_location + "_endpoint")
+        .option("checkpointLocation", settings.checkpoint_location + "/endpoint")
         .start()
     )
 
@@ -188,7 +188,7 @@ def start_streaming():
         global_agg.writeStream.queryName("global-metrics")
         .outputMode("append")
         .foreachBatch(lambda df, epoch: write_to_elasticsearch(df, "global-metrics"))
-        .option("checkpointLocation", settings.checkpoint_location + "_global")
+        .option("checkpointLocation", settings.checkpoint_location + "/global")
         .start()
     )
 
@@ -196,7 +196,7 @@ def start_streaming():
         parsed.writeStream.queryName("raw-logs")
         .outputMode("append")
         .foreachBatch(lambda df, epoch: write_to_elasticsearch(df, "raw-logs"))
-        .option("checkpointLocation", settings.checkpoint_location + "_raw")
+        .option("checkpointLocation", settings.checkpoint_location + "/raw")
         .start()
     )
 
