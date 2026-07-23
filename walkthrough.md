@@ -47,7 +47,11 @@ To build your portfolio, you'll want to capture the UI while it's under load.
 
 1. **Start the Load Test**:
    ```bash
-   docker run --rm -i grafana/k6 run - < load_tests/script.js
+   # On PowerShell, you can use the python script which handles this automatically:
+   python scripts/generate_load.py
+   
+   # Or manually using Get-Content:
+   Get-Content load_tests/script.js | docker run --rm -i grafana/k6 run -
    ```
 2. **Capture the Incident**:
    - As traffic spikes to 1000 users, the system might naturally degrade, or you can force an error by stopping a container (`docker stop payment-service`).

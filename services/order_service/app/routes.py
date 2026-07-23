@@ -7,6 +7,7 @@ from time import perf_counter
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from .config import settings
 from .producer import producer
 from .schemas import CreateOrderRequest, OrderEvent
 from .utils import current_timestamp, generate_request_id, get_client_ip
@@ -93,7 +94,7 @@ async def create_order(payload: CreateOrderRequest, request: Request):
 
             client = request.app.state.client
             resp = await client.post(
-                "http://payment-service:8000/payments",
+                settings.payment_service_url,
                 json=payment_payload,
                 headers=headers,
             )

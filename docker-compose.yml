@@ -9,10 +9,10 @@ services:
     environment:
       HTTP_MAX_CONNECTIONS: "500"
       HTTP_MAX_KEEPALIVE: "100"
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KAFKA_TOPIC: application-logs
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_TOPIC: ${KAFKA_TOPIC:-application-logs}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
     depends_on:
       - kafka
       - redis
@@ -38,13 +38,15 @@ services:
     environment:
       HTTP_MAX_CONNECTIONS: "500"
       HTTP_MAX_KEEPALIVE: "100"
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KAFKA_TOPIC: application-logs
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_TOPIC: ${KAFKA_TOPIC:-application-logs}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      PAYMENT_SERVICE_URL: ${PAYMENT_SERVICE_URL:-http://payment-service:8000/payments}
     depends_on:
       - kafka
       - redis
+      - payment-service
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/orders/health').read()"]
       interval: 30s
@@ -65,10 +67,10 @@ services:
       - "8003:8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--backlog", "4096"]
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KAFKA_TOPIC: application-logs
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_TOPIC: ${KAFKA_TOPIC:-application-logs}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
     depends_on:
       - kafka
       - redis
@@ -92,9 +94,9 @@ services:
       - "8004:8000"
 
     environment:
-      ELASTICSEARCH_HOST: http://elasticsearch:9200
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:-http://elasticsearch:9200}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
 
     depends_on:
       - elasticsearch
@@ -147,13 +149,15 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_LOG_DIRS: /var/kafka/logs
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    volumes:
+      - kafka-data:/var/kafka/logs
     networks:
       - log-network
 
   kafka-ui:
-    image: provectuslabs/kafka-ui:latest
+    image: provectuslabs/kafka-ui:v0.7.2
     restart: unless-stopped
     ports:
       - "8081:8080"
@@ -191,6 +195,13 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - log-network
 
@@ -212,9 +223,16 @@ services:
       context: ./streaming/spark
     container_name: spark-streaming
     restart: unless-stopped
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_TOPIC: ${KAFKA_TOPIC:-application-logs}
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:-http://elasticsearch:9200}
+      CHECKPOINT_LOCATION: ${CHECKPOINT_LOCATION:-/data/checkpoints}
     depends_on:
       - kafka
       - elasticsearch
+    volumes:
+      - spark-checkpoints:/data/checkpoints
     networks:
       - log-network
 
@@ -227,8 +245,8 @@ services:
       - "3001:3000"
 
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
 
     depends_on:
       - elasticsearch
@@ -256,6 +274,8 @@ volumes:
   elasticsearch-data:
   grafana-data:
   redis-data:
+  kafka-data:
+  spark-checkpoints:
 
 networks:
   log-network:

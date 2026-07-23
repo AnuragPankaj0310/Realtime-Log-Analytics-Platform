@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     debug: bool = False
     host: str = "0.0.0.0"
     port: int = 8000
+    payment_service_url: str = "http://payment-service:8000/payments"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
