@@ -43,7 +43,21 @@ export default function Analytics() {
   const { data: rawData, isLoading: loading, error: queryError } = useAnalytics(timeRange);
 
   const error = queryError ? 'Failed to load analytics data.' : null;
-  const data = (rawData?.metrics || rawData) as AnalyticsData | undefined;
+  const rawResolved = (rawData?.metrics || rawData) as AnalyticsData | undefined;
+
+  // Normalise: guarantee every array field exists so charts never crash
+  // when ES has no data yet (e.g. fresh boot before any traffic).
+  const data: AnalyticsData | undefined = rawResolved
+    ? {
+        ...rawResolved,
+        top_endpoints:            rawResolved.top_endpoints            ?? [],
+        traffic_by_service:       rawResolved.traffic_by_service       ?? [],
+        http_status_distribution: rawResolved.http_status_distribution ?? [],
+        traffic_over_time:        rawResolved.traffic_over_time        ?? [],
+        latency_histogram:        rawResolved.latency_histogram        ?? [],
+        heatmap:                  rawResolved.heatmap                  ?? [],
+      }
+    : undefined;
 
   if (loading && !data) return <SkeletonPage />;
   if (error) return <div className="p-8 text-center text-red-400">{error}</div>;
