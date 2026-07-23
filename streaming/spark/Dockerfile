@@ -6,7 +6,9 @@ ENV PATH="/opt/spark/bin:${PATH}"
 
 RUN mkdir -p /home/spark/.ivy2/cache \
     && mkdir -p /home/spark/.ivy2/jars \
-    && chown -R spark:spark /home/spark/.ivy2
+    && chown -R spark:spark /home/spark/.ivy2 \
+    && mkdir -p /data/checkpoints \
+    && chown -R spark:spark /data
 
 WORKDIR /app
 
